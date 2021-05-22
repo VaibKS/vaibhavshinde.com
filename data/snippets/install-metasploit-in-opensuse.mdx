@@ -1,0 +1,30 @@
+---
+title: Install Metasploit Framework in openSUSE
+date: '2020-10-25'
+---
+
+# Install Metasploit Framework in openSUSE
+
+I'm writing this post since I couldn't find any resource related to this and I hope this would help someone other there! ;)
+
+### Add GPG Key
+
+This will import the gpg key.
+
+```bash
+$ sudo rpm --import https://apt.metasploit.com/metasploit-framework.gpg.key
+```
+
+### Add Repository
+
+```bash
+$ sudo zypper addrepo --refresh https://rpm.metasploit.com metasploit
+```
+
+### Install Metasploit!
+
+```bash
+$ sudo zypper in metasploit-framework
+```
+
+That's it, wait for it to get installed!

