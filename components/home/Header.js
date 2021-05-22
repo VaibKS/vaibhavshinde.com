@@ -9,7 +9,7 @@ export default function Header() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 1 }}
       >
-        <header className="w-full max-w-3xl p-6 mx-auto mt-28 mb-10 flex flex-col md:flex-row">
+        <header className="w-full max-w-3xl p-6 mx-auto mt-28 mb-16 flex flex-col md:flex-row">
           <div className="space-y-4 text-center md:text-left">
             <div>
               <div className="text-gray-700">Hey, I'm</div>

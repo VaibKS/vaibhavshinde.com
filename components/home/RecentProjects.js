@@ -3,7 +3,7 @@ import ProjectCard from './ProjectCard';
 
 export default function RecentProjects() {
   return (
-    <Container>
+    <Container className="max-w-3xl md:px-6">
       <div className="space-y-4">
         <div className="text-2xl font-bold tracking-tight">Recent Projects</div>
         <div className="grid grid-cols-1 gap-4">

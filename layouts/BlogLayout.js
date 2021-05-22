@@ -12,8 +12,8 @@ export default function BlogLayout({ children, frontMatter }) {
         <title>{frontMatter.title} - Vaibhav Shinde</title>
       </Head>
       <article className="w-full max-w-3xl mx-auto p-8 mt-12">
-        <div className="space-y-6">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
+        <div className="space-y-8">
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">
             {frontMatter.title}
           </h1>
           <div className="flex items-center space-x-3 text-gray-700">
