@@ -3,7 +3,7 @@ import Link from "next/link";
 
 const ProjectCard = ({ title, subtext, href }) => {
   const card = (
-    <div className="flex flex-row items-center p-4 bg-white cursor-pointer transform transition rounded-md border-2 border-gray-100 hover:shadow-xl hover:scale-105 hover:z-10 space-x-4 md:items-center">
+    <div className="flex flex-row items-center p-4 bg-white cursor-pointer transform transition rounded-md border-2 border-gray-100 hover:shadow-lg hover:scale-105 hover:z-10 space-x-4 md:items-center">
       <div className="my-3 md:pl-2">
         <CodeIcon className="h-10 text-gray-500" />
       </div>

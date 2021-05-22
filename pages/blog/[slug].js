@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import { MDXRemote } from 'next-mdx-remote';
 import { getSlugs, getPostBySlug } from '@/utils/posts';
-import BlogLayout from '@/layouts/blog';
+import BlogLayout from '@/layouts/BlogLayout';
 
 const MDXComponents = {
   Image

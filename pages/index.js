@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import Header from '@/components/home/Header';
 import RecentProjects from '@/components/home/RecentProjects';
 
-import Footer from '@/components/footer';
+import Footer from '@/components/Footer';
 
 export default function Home() {
   const [loadContent, setLoadContent] = useState(false);

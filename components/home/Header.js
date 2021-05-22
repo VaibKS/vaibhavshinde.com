@@ -1,7 +1,7 @@
-import { motion } from "framer-motion";
+import { motion } from 'framer-motion';
 import SlideText from './SlideText';
 
-const Header = () => {
+export default function Header() {
   return (
     <>
       <motion.main
@@ -32,6 +32,4 @@ const Header = () => {
       </motion.main>
     </>
   );
-};
-
-module.exports = Header;
+}

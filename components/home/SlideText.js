@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 
-const SlideText = () => {
+export default function SlideText () {
   const roles = [
     "Full Stack Dev",
     "UI/UX Design",
@@ -25,8 +25,8 @@ const SlideText = () => {
     <AnimatePresence>
       <motion.span
         className="absolute text-blue-500 cursor-pointer"
-        initial={{ y: 10, scale: 1.4, opacity: 1 }}
-        animate={{ y: 0, scale: 1, opacity: 1 }}
+        initial={{ y: 10, scale: 1.4, opacity: 1, rotateX: 90 }}
+        animate={{ y: 0, scale: 1, opacity: 1, rotateX: 0 }}
         exit={{ y: 10, scale: 0.2, opacity: 0 }}
         transition={{ duration: 0.2 }}
         key={roleIndex}
@@ -37,5 +37,3 @@ const SlideText = () => {
     </AnimatePresence>
   );
 };
-
-export default SlideText;

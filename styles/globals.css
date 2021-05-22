@@ -13,3 +13,7 @@ body {
 :not(pre) > code[class*="language-"], pre[class*="language-"] {
   @apply !bg-[#250312];
 }
+
+.prose img {
+  @apply my-6 mx-auto align-middle;
+}
