@@ -8,7 +8,6 @@ export default function BlogLayout({ children, frontMatter }) {
     <article className="w-full max-w-3xl mx-auto p-8 mt-12">
       <Head>
         <title>{frontMatter.title} - Vaibhav Shinde</title>
-        <link rel="stylesheet" href="/path/to/styles/default.css" />
       </Head>
       <div className="space-y-6">
         <h1 className="text-3xl font-bold tracking-tighter leading-tight">
