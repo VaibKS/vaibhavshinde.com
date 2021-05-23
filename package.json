@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "preview": "next build && next start",
     "export": "next build && next export",
     "format": "prettier '{components,data,layouts,pages,utils}/**/*.{css,js,mdx}' --write"
   },

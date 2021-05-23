@@ -8,7 +8,7 @@ export default class Document extends NextDocument {
 
   render() {
     return (
-      <Html lang="en" className="antialiased">
+      <Html lang="en" className="antialiased text-gray-500">
         <Head>
           <link
             rel="apple-touch-icon"

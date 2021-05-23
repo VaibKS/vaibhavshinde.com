@@ -31,10 +31,7 @@ export default function Home() {
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://vaibhavshinde.com/" />
-        <meta
-          property="og:title"
-          content="Vaibhav Shinde"
-        />
+        <meta property="og:title" content="Vaibhav Shinde" />
         <meta
           property="og:description"
           content="Full Stack Dev, UI/UX Design and Cyber Security enthusiast"
