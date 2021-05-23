@@ -1,0 +1,58 @@
+---
+title: Setting up Rails and PostgreSQL in openSUSE
+subtext: After shifting to openSUSE, I had difficulties installing Rails and Postgres on my system, after searching for a while I found a solution
+date: '2020-08-21'
+---
+
+After shifting to openSUSE, I had difficulties installing Rails and Postgres on my system, after searching for a while I found how to do it.
+
+> **Note:** I am using Tumbleweed, so if you're using Leap, just swap the keyword from the commands as you normally would.
+
+## Problems
+
+If you faced these problems, chances are this would help you with it!
+- Unable to properly install `rails` gem. The installation would succeed, but I could not run the rails command from my terminal.
+- When trying to install the gem `pg` which is a Postgres module, I get an error saying the necessary development source files are not present on the system to build it. 
+
+## The Solution
+
+All I had to do was use `rvm` instead of `rbenv` and also install an additional package `postgresql-server-devel` for the `pg` gem to be installed!
+
+### Steps
+
+- Install `rvm` first as shown in [this article](https://gorails.com/setup/ubuntu/20.04).
+	```bash
+	gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+	curl -sSL https://get.rvm.io | bash -s stable
+	source ~/.rvm/scripts/rvm
+	rvm install 2.7.1
+	rvm use 2.7.1 --default
+	ruby -v
+	```
+	To verify if the ruby and gem binaries are from rvm, run the commands to see their paths.
+	```bash
+	which ruby
+	# /home/<username>/.rvm/rubies/ruby-2.7.1/bin/ruby
+	which gem
+	# /home/<username>/.rvm/rubies/ruby-2.7.1/bin/gem
+	```
+- Install Postgres
+	```bash
+	sudo zypper addrepo http://download.opensuse.org/repositories/server:database:postgresql/openSUSE_Tumbleweed/ PostgreSQL && sudo zypper refresh
+	sudo zypper in postgresql postgresql-server postgresql-contrib postgresql-devel postgresql-server-devel
+	sudo systemctl enable postgresql
+	sudo systemctl start postgresql
+	```
+- Finally, install rails!
+	```bash
+	gem install rails
+	# or, if you want a specific version of rails
+	gem install rails -v 5.2.4.3
+	```
+
+If you're still facing problems, try installing `libpq5`.
+
+### References
+
+- [https://gorails.com/setup/ubuntu/20.04](https://gorails.com/setup/ubuntu/20.04)
+- [https://en.opensuse.org/SDB:PostgreSQL](https://en.opensuse.org/SDB:PostgreSQL)
