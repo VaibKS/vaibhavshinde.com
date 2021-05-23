@@ -6,10 +6,24 @@ import Footer from '@/components/Footer';
 import 'prism-themes/themes/prism-atom-dark.css';
 
 export default function BlogLayout({ children, frontMatter }) {
+  const title = `${frontMatter.title} - Vaibhav Shinde`
   return (
     <>
       <Head>
-        <title>{frontMatter.title} - Vaibhav Shinde</title>
+        <title>{title}</title>
+        <meta name="twitter:title" content={title} />
+        <meta name="twitter:description" content={frontMatter.subtext} />
+        <meta name="description" content={frontMatter.subtext} />
+        <meta name="author" content="Vaibhav Shinde" />
+        <meta property="og:type" content="website" />
+        <meta
+          property="og:title"
+          content={title}
+        />
+        <meta
+          property="og:description"
+          content={frontMatter.subtext}
+        />
       </Head>
       <article className="w-full max-w-3xl mx-auto p-8 mt-12">
         <div className="space-y-8">
@@ -31,7 +45,9 @@ export default function BlogLayout({ children, frontMatter }) {
             </div>
           </div>
         </div>
-        <div className="prose lg:prose-lg max-w-none w-full mt-8">{children}</div>
+        <div className="prose lg:prose-lg max-w-none w-full mt-8">
+          {children}
+        </div>
       </article>
 
       <Footer />

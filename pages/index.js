@@ -19,7 +19,26 @@ export default function Home() {
   return (
     <div>
       <Head>
-        <title>Vaibhav Shinde - Developer, Designer</title>
+        <title>Vaibhav Shinde</title>
+        <meta
+          name="description"
+          content="Full Stack Dev, UI/UX Design and Cyber Security enthusiast"
+        />
+        <meta name="twitter:title" content="Vaibhav Shinde" />
+        <meta
+          name="twitter:description"
+          content="Full Stack Dev, UI/UX Design and Cyber Security enthusiast"
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://vaibhavshinde.com/" />
+        <meta
+          property="og:title"
+          content="Vaibhav Shinde"
+        />
+        <meta
+          property="og:description"
+          content="Full Stack Dev, UI/UX Design and Cyber Security enthusiast"
+        />
       </Head>
       <Header />
       {loadContent && (
@@ -29,7 +48,7 @@ export default function Home() {
           transition={{ duration: 0.4 }}
         >
           <RecentProjects />
-          <Footer/>
+          <Footer />
         </motion.main>
       )}
     </div>

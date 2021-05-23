@@ -38,7 +38,7 @@ export function getAllPostsMetaData(type) {
       'utf-8'
     );
     const { data } = matter(source);
-    
+
     return [
       {
         ...data,

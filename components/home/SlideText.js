@@ -1,12 +1,12 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
 
-export default function SlideText () {
+export default function SlideText() {
   const roles = [
-    "Full Stack Dev",
-    "UI/UX Design",
-    "CyberSec",
-    "Mobile App Dev",
+    'Full Stack Dev',
+    'UI/UX Design',
+    'CyberSec',
+    'Mobile App Dev'
   ];
 
   const [roleIndex, setRole] = useState(0);
@@ -36,4 +36,4 @@ export default function SlideText () {
       </motion.span>
     </AnimatePresence>
   );
-};
+}

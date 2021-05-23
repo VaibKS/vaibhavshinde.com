@@ -1,5 +1,5 @@
-import { CodeIcon } from "@heroicons/react/outline/";
-import Link from "next/link";
+import { CodeIcon } from '@heroicons/react/outline/';
+import Link from 'next/link';
 
 const ProjectCard = ({ title, subtext, href }) => {
   const card = (
