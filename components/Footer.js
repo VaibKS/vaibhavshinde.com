@@ -23,7 +23,7 @@ export default function Footer({ className }) {
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 md:text-right">
           <h5 className="uppercase text-xs font-semibold tracking-wide text-gray-700">
             Socials
           </h5>

@@ -3,12 +3,12 @@ import ProjectCard from './ProjectCard';
 
 export default function RecentProjects() {
   return (
-    <Container className="max-w-3xl md:px-6">
+    <Container className="max-w-6xl md:px-6 mt-24 md:mt-36">
       <div className="space-y-4">
-        <div className="text-xl md:text-2xl text-black font-bold tracking-tight">
-          Recent Projects
+        <div className="text-2xl text-black font-bold tracking-tight">
+          Featured Projects
         </div>
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-flow-row grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <ProjectCard
             title="Linkous"
             subtext="A simple malicious link ranking/detection tool which uses machine learning"

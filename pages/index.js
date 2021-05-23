@@ -2,12 +2,28 @@ import Head from 'next/head';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
+import RecentProjects from '@/components/home/FeaturedProjects';
+import RecentPosts from '@/components/home/RecentPosts';
 import Header from '@/components/home/Header';
-import RecentProjects from '@/components/home/RecentProjects';
-
 import Footer from '@/components/Footer';
 
-export default function Home() {
+import { getAllPostsMetaData } from '@/utils/posts';
+
+export async function getStaticProps() {
+  const posts = [
+    ...getAllPostsMetaData('blog'),
+    ...getAllPostsMetaData('snippets')
+  ];
+  return {
+    props: {
+      posts: posts
+        .sort((a, b) => Number(new Date(b.date)) - Number(new Date(a.date)))
+        .slice(0, 5)
+    }
+  };
+}
+
+export default function Home({ posts }) {
   const [loadContent, setLoadContent] = useState(false);
 
   useEffect(() => {
@@ -45,7 +61,8 @@ export default function Home() {
           transition={{ duration: 0.4 }}
         >
           <RecentProjects />
-          <Footer />
+          <RecentPosts posts={posts} />
+          <Footer className="max-w-3xl md:px-6" />
         </motion.main>
       )}
     </div>

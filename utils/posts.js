@@ -41,6 +41,7 @@ export function getAllPostsMetaData(type) {
 
     return [
       {
+        type,
         ...data,
         slug: filename.replace(/\.mdx$/, '')
       },
