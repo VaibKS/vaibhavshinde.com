@@ -1,9 +1,8 @@
-import Container from '../Container';
 import ProjectCard from './ProjectCard';
 
 export default function RecentProjects() {
   return (
-    <Container className="max-w-6xl md:px-6 mt-24 md:mt-36">
+    <div className="max-w-6xl px-6 mx-auto mt-24 md:mt-36">
       <div className="space-y-4">
         <div className="text-2xl text-black font-bold tracking-tight">
           Featured Projects
@@ -37,6 +36,6 @@ export default function RecentProjects() {
           />
         </div>
       </div>
-    </Container>
+    </div>
   );
 }

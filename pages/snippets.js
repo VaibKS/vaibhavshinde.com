@@ -39,7 +39,7 @@ export default function Blog({ posts }) {
           </div>
         </div>
         <div className="grid grid-cols-1 gap-8 mt-16">
-          {filteredPosts.length == 0 && (
+          {filteredPosts.length === 0 && (
             <div className="text-center space-y-6">
               <h5 className="font-bold text-6xl text-blue-600">404</h5>
               <p className="text-gray-500">No posts found</p>
