@@ -44,7 +44,7 @@ export default function BlogLayout({ children, frontMatter }) {
             </div>
           </div>
         </div>
-        <div className="prose dark:prose lg:prose-lg max-w-none w-full mt-8 dark:text-gray-300">
+        <div className="prose dark:prose-dark lg:prose-lg max-w-none w-full mt-8 dark:text-gray-300">
           {children}
         </div>
       </article>

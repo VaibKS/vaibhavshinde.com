@@ -8,7 +8,7 @@
     "start": "next start",
     "preview": "next build && next start",
     "export": "next build && next export",
-    "format": "prettier '{components,data,layouts,pages,utils}/**/*.{css,js,mdx}' --write"
+    "format": "prettier 'src/{components,data,layouts,pages,utils}/**/*.{css,js,mdx}' --write"
   },
   "dependencies": {
     "@heroicons/react": "^1.0.1",
