@@ -5,7 +5,7 @@ import matter from 'gray-matter';
 import { serialize } from 'next-mdx-remote/serialize';
 import mdxPrism from 'mdx-prism';
 
-const dataPath = path.join(process.cwd(), 'data');
+const dataPath = path.join(process.cwd(), 'src/data');
 
 export async function getPostBySlug(type, slug) {
   const source = fs.readFileSync(

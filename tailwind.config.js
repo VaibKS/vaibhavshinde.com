@@ -3,10 +3,10 @@ const defaultTheme = require('tailwindcss/defaultTheme')
 module.exports = {
   mode: "jit",
   purge: [
-    "./pages/**/*.{js,ts,jsx,tsx}",
-    "./components/**/*.{js,ts,jsx,tsx}",
-    "./layouts/**/*.{js,ts,jsx,tsx}",
-    "./data/**/*.mdx",
+    "./src/pages/**/*.{js,ts,jsx,tsx}",
+    "./src/components/**/*.{js,ts,jsx,tsx}",
+    "./src/layouts/**/*.{js,ts,jsx,tsx}",
+    "./src/data/**/*.mdx",
   ],
   darkMode: false, // or 'media' or 'class'
   theme: {
