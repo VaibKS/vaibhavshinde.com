@@ -1,27 +1,29 @@
-const defaultTheme = require('tailwindcss/defaultTheme')
+const defaultTheme = require('tailwindcss/defaultTheme');
 
 module.exports = {
-  mode: "jit",
+  mode: 'jit',
   purge: [
-    "./src/pages/**/*.{js,ts,jsx,tsx}",
-    "./src/components/**/*.{js,ts,jsx,tsx}",
-    "./src/layouts/**/*.{js,ts,jsx,tsx}",
-    "./src/data/**/*.mdx",
+    './src/pages/**/*.{js,ts,jsx,tsx}',
+    './src/components/**/*.{js,ts,jsx,tsx}',
+    './src/layouts/**/*.{js,ts,jsx,tsx}',
+    './src/data/**/*.mdx'
   ],
-  darkMode: false, // or 'media' or 'class'
+  darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', ...defaultTheme.fontFamily.sans],
+        sans: ['Inter', ...defaultTheme.fontFamily.sans]
       },
       fontSize: {
-        '5xl': ['3rem', '1.25'],
+        '5xl': ['3rem', '1.25']
+      },
+      colors: {
+        asphalt: '#181818'
       }
-    },
-
+    }
   },
   variants: {
-    extend: {},
+    extend: {}
   },
-  plugins: [require("@tailwindcss/typography")],
+  plugins: [require('@tailwindcss/typography')]
 };

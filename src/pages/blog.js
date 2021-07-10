@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import Head from 'next/head';
+import { SearchIcon } from '@heroicons/react/outline';
 
 import Container from '@/components/Container';
 import PostCard from '@/components/PostCard';
 import Footer from '@/components/Footer';
 import { getAllPostsMetaData } from '@/utils/posts';
-import { SearchIcon } from '@heroicons/react/outline';
+import Header from '@/components/Header';
 
 export async function getStaticProps() {
   const posts = getAllPostsMetaData('blog');
@@ -30,15 +31,15 @@ export default function Blog({ posts }) {
       <Head>
         <title>Blog - Vaibhav Shinde</title>
       </Head>
-
-      <Container className="mt-12">
+      <Header />
+      <Container className="mt-2">
         <div className="space-y-8">
-          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-black">
+          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-black dark:text-gray-200">
             Blog
           </h1>
           <div className="flex items-center">
             <input
-              className="w-full px-3 py-2 pr-10 text-gray-700 bg-white border outline-none transition focus:border-blue-500 focus:ring-1 rounded-md ring-blue-500 focus:shadow-xs"
+              className="w-full px-3 py-2 pr-10 text-gray-700 dark:text-gray-300 bg-white dark:bg-asphalt border dark:border-gray-500 outline-none transition focus:border-blue-500 focus:ring-1 rounded-md ring-blue-500 focus:shadow-xs"
               type="text"
               placeholder="Search"
               value={query}

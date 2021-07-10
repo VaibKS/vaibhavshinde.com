@@ -4,14 +4,13 @@ export default function RecentProjects() {
   return (
     <div className="max-w-6xl px-6 mx-auto mt-24 md:mt-36">
       <div className="space-y-4">
-        <div className="text-2xl text-black font-bold tracking-tight">
+        <div className="text-2xl text-black dark:text-gray-300 font-bold tracking-tight">
           Featured Projects
         </div>
         <div className="grid grid-flow-row grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <ProjectCard
             title="Linkous"
             subtext="A simple malicious link ranking/detection tool which uses machine learning"
-            href="https://linkous.herokuapp.com"
           />
           <ProjectCard
             title="HTML Class Prefixer"
