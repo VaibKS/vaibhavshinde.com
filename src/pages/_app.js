@@ -4,7 +4,7 @@ import '@/styles/globals.css';
 import Head from 'next/head';
 import Router from 'next/router';
 import NProgress from 'nprogress';
-import { ThemeProvider } from 'next-themes'
+import { ThemeProvider } from 'next-themes';
 
 NProgress.configure({ showSpinner: false });
 
