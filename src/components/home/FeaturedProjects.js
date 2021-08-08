@@ -9,6 +9,16 @@ export default function RecentProjects() {
         </div>
         <div className="grid grid-flow-row grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <ProjectCard
+            title="wind-themes"
+            subtext="Adds multiple themes support for TailwindCSS"
+            href="https://wind-themes.netlify.app"
+          />
+          <ProjectCard
+            title="Gumroad Overlay"
+            subtext="Clone of Gumroad Overlay Library with some extras"
+            href="https://gumroad-overlay-vs.netlify.app"
+          />
+          <ProjectCard
             title="Linkous"
             subtext="A simple malicious link ranking/detection tool which uses machine learning"
           />
@@ -17,21 +27,11 @@ export default function RecentProjects() {
             subtext="Useful for prefixing class names for css libraries"
             href="https://prefixer.netlify.app"
           />
-          <ProjectCard
-            title="Gumroad Overlay"
-            subtext="Clone of Gumroad Overlay Library with some extras"
-            href="https://gumroad-overlay-vs.netlify.app"
-          />
           <ProjectCard title="GCalc" subtext="A calculator of sorts [WIP]" />
           <ProjectCard
             title="enCode Code Editor"
             subtext="A very basic code editor I made while in high school"
             href="https://vaibks.github.io/editor"
-          />
-          <ProjectCard
-            title="WhatsApp Bot library using Gupshup.io in C"
-            subtext="Library in C made for OpenVenti project"
-            href="https://github.com/VaibKS/whatsapp-bot-c"
           />
         </div>
       </div>
